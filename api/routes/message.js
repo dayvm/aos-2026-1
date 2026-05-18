@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
@@ -12,22 +11,37 @@ router.get("/:messageId", async (req, res) => {
   const message = await req.context.models.Message.findByPk(
     req.params.messageId,
   );
+
+  if (!message) {
+    return res.status(404).send({ error: "Mensagem nao encontrada." });
+  }
+
   return res.send(message);
 });
 
 router.post("/", async (req, res) => {
+  const { text } = req.body;
+
+  if (!text) {
+    return res.status(400).send({ error: "Texto da mensagem e obrigatorio." });
+  }
+
   const message = await req.context.models.Message.create({
-    text: req.body.text,
+    text,
     userId: req.context.me.id,
   });
 
-  return res.send(message);
+  return res.status(201).send(message);
 });
 
 router.delete("/:messageId", async (req, res) => {
   const result = await req.context.models.Message.destroy({
     where: { id: req.params.messageId },
   });
+
+  if (!result) {
+    return res.status(404).send({ error: "Mensagem nao encontrada." });
+  }
 
   return res.send(true);
 });

@@ -1,8 +1,11 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import cors from "cors";
 import express from "express";
 
 import models, { sequelize } from "./models";
+import authMiddleware from "./middlewares/auth";
+import protectRoutes from "./middlewares/protectRoutes";
 import routes from "./routes";
 
 const app = express();
@@ -10,13 +13,18 @@ app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use(async (req, res, next) => {
   req.context = {
     models,
-    me: await models.User.findByLogin("rwieruch"),
+    me: null,
   };
   next();
 });
+
+app.use(authMiddleware);
+app.use(protectRoutes);
+
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${req.ip}`);
   next();
@@ -38,7 +46,7 @@ const eraseDatabaseOnSync = process.env.ERASE_DATABASE_ON_SYNC === "true";
 
 sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
   if (eraseDatabaseOnSync) {
-    createUsersWithMessages();
+    await createUsersWithMessages();
   }
 
   app.listen(port, () =>
@@ -49,10 +57,14 @@ sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
 });
 
 const createUsersWithMessages = async () => {
+  const rwieruchPasswordHash = await bcrypt.hash("123456", 10);
+  const ddavidsPasswordHash = await bcrypt.hash("123456", 10);
+
   await models.User.create(
     {
       username: "rwieruch",
       email: "rwieruch@email.com",
+      passwordHash: rwieruchPasswordHash,
       messages: [
         {
           text: "Published the Road to learn React",
@@ -68,6 +80,7 @@ const createUsersWithMessages = async () => {
     {
       username: "ddavids",
       email: "ddavids@email.com",
+      passwordHash: ddavidsPasswordHash,
       messages: [
         {
           text: "Happy to release ...",

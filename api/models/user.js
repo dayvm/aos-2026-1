@@ -16,6 +16,21 @@ const getUserModel = (sequelize, { DataTypes }) => {
         notEmpty: true,
       },
     },
+    passwordHash: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
+    refreshToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    refreshTokenExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   });
 
   User.associate = (models) => {
